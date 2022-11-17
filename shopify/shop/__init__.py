@@ -9,7 +9,7 @@ shops = {
         interface.Shop(
             "NationalMemo",
             "national-memo",
-            os.getenv("NATIONAL_MEMO", ""),
+            os.getenv("NATIONAL_MEMO_TOKEN", ""),
         ),
     ]
 }
