@@ -1,0 +1,52 @@
+name: Cloud Functions
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+  workflow_dispatch:
+
+concurrency: ${{ github.ref }}
+
+env:
+  GCP_SA: integration-1@theculinaryteam.iam.gserviceaccount.com
+
+  FUNCTION_NAME: the-culiary-team-shopify-${{ github.ref_name }}
+  PUBLIC_URL: https://us-central1-theculinaryteam.cloudfunctions.net/the-culiary-team-shopify-${{ github.ref_name }}
+
+  ENV_FILE: env.yaml
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.ENV_KEY }}
+
+      - uses: google-github-actions/auth@v0
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v0
+
+      - run: |
+          echo "NATIONA_MEMO_TOKEN: ${{ secrets.NATIONA_MEMO_TOKEN }}" >> ${{ env.ENV_FILE }}
+
+          echo "GCP_SA: ${{ env.GCP_SA }}" >> ${{ env.ENV_FILE }}
+          echo "PUBLIC_URL: ${{ env.PUBLIC_URL }}" >> ${{ env.ENV_FILE }}
+
+      - run: >-
+          gcloud functions deploy ${{ env.FUNCTION_NAME }}
+          --entry-point=main
+          --region=us-central1
+          --timeout=530
+          --memory=1024MB
+          --runtime=python39
+          --trigger-http
+          --no-user-output-enabled
+          --service-account=${{ env.GCP_SA }}
+          --env-vars-file=${{ env.ENV_FILE }}
